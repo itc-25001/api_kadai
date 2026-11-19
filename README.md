@@ -26,7 +26,7 @@
 このプロジェクトは、以前の `message_board` と別フォルダに置いてください。**旧データベースをそのままマイグレーションするとIDの型が異なるため失敗します。** このサンプルでは独立DBとポート**5433**を使用し、既存の5432のDBに触れません。
 
 ```bash
-cd forum_rest_api
+cd api_kadai
 cp .env.example .env
 bun install
 # DBだけDockerで起動
@@ -154,7 +154,7 @@ PostgreSQLには`DATETIME`という型名がないので、課題の「DATETIME�
 ## 7. ファイル構成
 
 ```text
-forum_rest_api/
+api_kadai/
 ├── app.ts                       # Express起動・認証Cookie・エラーハンドラー
 ├── src/
 │   ├── lib/
