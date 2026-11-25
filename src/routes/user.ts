@@ -99,29 +99,64 @@ router.post('/login', async (req, res) => {
 })
 
 // PUT /api/user/change  名前・パスワード変更
+
 router.put('/change', requireAuth, async (req, res) => {
   const body = isRecord(req.body) ? req.body : {}
+
+  const hasEmail = Object.prototype.hasOwnProperty.call(body, 'email')
   const hasName = Object.prototype.hasOwnProperty.call(body, 'name')
   const hasPassword = Object.prototype.hasOwnProperty.call(body, 'password')
-  if (!hasName && !hasPassword) {
+
+  if (!hasEmail && !hasName && !hasPassword) {
     sendErrors(res, 400, [error('name', '変更する項目を指定してください')])
     return
   }
 
+  const emailResult = hasEmail ? getEmail(body.email) : null
   const nameResult = hasName ? validateName(body.name) : null
   const passwordErrors = hasPassword ? validatePassword(body.password) : []
-  const errors = [...(nameResult?.errors ?? []), ...passwordErrors]
+
+  const errors = [
+    ...(emailResult?.errors ?? []),
+    ...(nameResult?.errors ?? []),
+    ...passwordErrors
+  ]
+
   if (errors.length) {
     sendErrors(res, 400, errors)
     return
   }
 
-  const data: { name?: string | null; password?: string } = {}
+  const data: {
+    email?: string
+    name?: string | null
+    password?: string
+  } = {}
+
+  if (hasEmail) data.email = emailResult!.email
   if (hasName) data.name = nameResult!.name
-  if (hasPassword) data.password = await argon2.hash(body.password as string, hashOptions)
-  await prisma.user.update({ where: { id: req.session.userId! }, data })
+  if (hasPassword) {
+    data.password = await argon2.hash(body.password as string, hashOptions)
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: req.session.userId! },
+      data
+    })
+  } catch (e: unknown) {
+    if (isRecord(e) && e.code === 'P2002') {
+      sendErrors(res, 400, [
+        error('email', 'このメールアドレスは既に使用されています')
+      ])
+      return
+    }
+    throw e
+  }
+
   res.status(200).json({ message: 'Changed!' })
 })
+
 
 // おまけのAPI：POST /api/user/logout  セッション破棄
 router.post('/logout', requireAuth, async (req, res) => {

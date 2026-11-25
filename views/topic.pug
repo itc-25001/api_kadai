@@ -1,0 +1,344 @@
+
+extends layout
+
+block main
+  p
+    a(href='/topics') ← トピック一覧に戻る
+
+  h2#topicTitle
+
+  h3 トピック名を変更
+  form#editTopicForm
+    input#editTitle(
+      type='text'
+      placeholder='新しいトピック名'
+      maxlength='256'
+      required
+    )
+    button(type='submit') 変更する
+  p#editTopicResult
+
+  h3 トピックを削除
+  button#deleteTopicButton(type='button') 削除する
+  p#deleteTopicResult
+
+  h3 投稿一覧
+  ul#postList
+    li メッセージを取得しています...
+  div
+    button#prevPage(type='button' disabled) 前のページ
+    span#pageNumber 1ページ目
+    button#nextPage(type='button' disabled) 次のページ
+
+  h3 返信する
+  form#replyForm
+    textarea#replyMessage(
+      name='message'
+      rows='4'
+      maxlength='512'
+      required
+      placeholder='メッセージを入力してください'
+    )
+    br
+    button(type='submit') 投稿する
+
+  p#replyResult
+
+  script.
+    let currentPage = 1;
+    // トピック詳細を取得する
+    async function loadTopic() {
+      const topicId = window.location.pathname.split('/').pop();
+
+      const response = await fetch(
+      '/api/topic/' + encodeURIComponent(topicId)
+      + '?page=' + currentPage
+      );
+
+      if (response.status === 401) {
+        window.location.href = '/';
+        return;
+      }
+
+      const title = document.getElementById('topicTitle');
+      const list = document.getElementById('postList');
+
+      if (!response.ok) {
+        title.textContent = 'トピックを取得できませんでした';
+        list.replaceChildren();
+        return;
+      }
+
+      const data = await response.json();
+
+      document.getElementById('pageNumber').textContent =
+        currentPage + 'ページ目';
+
+      document.getElementById('prevPage').disabled =
+        currentPage === 1;
+
+      document.getElementById('nextPage').disabled =
+        data.posts.length < 5;
+
+      title.textContent = data.title;
+      list.replaceChildren();
+
+      if (data.posts.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = '投稿はありません';
+        list.appendChild(li);
+        return;
+      }
+
+      // 投稿を表示する
+      data.posts.forEach(post => {
+        const li = document.createElement('li');
+
+        const name = document.createElement('strong');
+        name.textContent = post.contributor.name;
+
+        const message = document.createElement('p');
+        message.textContent = post.message;
+
+        // 投稿編集ボタン
+        const editButton = document.createElement('button');
+        editButton.textContent = '編集';
+
+        editButton.addEventListener('click', async () => {
+          const newMessage = window.prompt(
+            '新しいメッセージを入力してください',
+            post.message
+          );
+
+          if (newMessage === null) return;
+
+          const updatedMessage = newMessage.trim();
+
+          if (!updatedMessage || updatedMessage.length > 512) {
+            alert('1〜512文字で入力してください');
+            return;
+          }
+
+          try {
+            const response = await fetch(
+              '/api/post/' + encodeURIComponent(post.id),
+              {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  message: updatedMessage
+                })
+              }
+            );
+
+            if (response.status === 401) {
+              window.location.href = '/';
+              return;
+            }
+
+            if (!response.ok) {
+              const data = await response.json();
+              alert(
+                data.errors?.[0]?.reason || '編集に失敗しました'
+              );
+              return;
+            }
+
+            await loadTopic();
+
+          } catch (error) {
+            alert('通信エラーが発生しました');
+            console.error(error);
+          }
+        });
+
+
+        // 投稿削除ボタン
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = '削除';
+
+        deleteButton.addEventListener('click', async () => {
+          const confirmed = window.confirm('この投稿を削除しますか？');
+
+          if (!confirmed) return;
+
+          try {
+            const response = await fetch(
+              '/api/post/' + encodeURIComponent(post.id),
+              {
+                method: 'DELETE'
+              }
+            );
+
+            if (response.status === 401) {
+              window.location.href = '/';
+              return;
+            }
+
+            if (!response.ok) {
+              const data = await response.json();
+              alert(data.errors?.[0]?.reason || '削除に失敗しました');
+              return;
+            }
+
+            await loadTopic();
+
+          } catch (error) {
+            alert('通信エラーが発生しました');
+            console.error(error);
+          }
+        });
+
+        li.appendChild(name);
+        li.appendChild(message);
+        li.appendChild(editButton);
+        li.appendChild(deleteButton);
+
+        list.appendChild(li);
+      });
+    }
+
+    // 最初にトピックを読み込む
+    loadTopic().catch(error => {
+      document.getElementById('topicTitle').textContent =
+        '通信エラーが発生しました';
+      console.error(error);
+    });
+
+    // 返信投稿処理
+    document.getElementById('replyForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const topicId = window.location.pathname.split('/').pop();
+      const message = document.getElementById('replyMessage').value.trim();
+      const result = document.getElementById('replyResult');
+
+      if (!message) {
+        result.textContent = 'メッセージを入力してください';
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          '/api/topic/' + encodeURIComponent(topicId),
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+          }
+        );
+
+        if (response.status === 401) {
+          window.location.href = '/';
+          return;
+        }
+
+        if (!response.ok) {
+          const data = await response.json();
+          result.textContent =
+            data.errors?.[0]?.reason || '投稿に失敗しました';
+          return;
+        }
+
+        document.getElementById('replyMessage').value = '';
+        result.textContent = '投稿しました';
+
+        await loadTopic();
+
+      } catch (error) {
+        result.textContent = '通信エラーが発生しました';
+        console.error(error);
+      }
+    });
+
+    // トピック名変更処理
+    document.getElementById('editTopicForm')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const topicId = window.location.pathname.split('/').pop();
+      const title = document.getElementById('editTitle').value.trim();
+      const result = document.getElementById('editTopicResult');
+
+      try {
+        const response = await fetch(
+          '/api/topic/' + encodeURIComponent(topicId),
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title })
+          }
+        );
+
+        if (response.status === 401) {
+          window.location.href = '/';
+          return;
+        }
+
+        if (!response.ok) {
+          const data = await response.json();
+          result.textContent =
+            data.errors?.[0]?.reason || '変更に失敗しました';
+          return;
+        }
+
+        result.textContent = 'トピック名を変更しました';
+
+        await loadTopic();
+
+      } catch (error) {
+        result.textContent = '通信エラーが発生しました';
+        console.error(error);
+      }
+    });
+
+    // トピック削除処理
+    document.getElementById('deleteTopicButton')?.addEventListener('click', async () => {
+      const confirmed = window.confirm(
+        '本当にこのトピックを削除しますか？'
+      );
+
+      if (!confirmed) return;
+
+      const topicId = window.location.pathname.split('/').pop();
+      const result = document.getElementById('deleteTopicResult');
+
+      try {
+        const response = await fetch(
+          '/api/topic/' + encodeURIComponent(topicId),
+          {
+            method: 'DELETE'
+          }
+        );
+
+        if (response.status === 401) {
+          window.location.href = '/';
+          return;
+        }
+
+        if (!response.ok) {
+          const data = await response.json();
+          result.textContent =
+            data.errors?.[0]?.reason || '削除に失敗しました';
+          return;
+        }
+
+        window.location.href = '/topics';
+
+      } catch (error) {
+        result.textContent = '通信エラーが発生しました';
+        console.error(error);
+      }
+    });
+    // 前のページへ移動
+    document.getElementById('prevPage').addEventListener('click', async () => {
+      if (currentPage > 1) {
+        currentPage--;
+        await loadTopic();
+      }
+    });
+
+    // 次のページへ移動
+    document.getElementById('nextPage').addEventListener('click', async () => {
+      currentPage++;
+      await loadTopic();
+    });

@@ -1,0 +1,268 @@
+
+extends layout
+
+block main
+  h2 トピック一覧
+
+  button#logoutButton(type='button') ログアウト
+  p#logoutResult
+
+  ul#topicList
+    li 読み込み中...
+
+  div
+    button#prevPage(type='button' disabled) 前のページ
+    span#pageNumber 1ページ目
+    button#nextPage(type='button' disabled) 次のページ
+
+  p#pageResult
+
+  h3 新しいトピックを作成
+
+  form#createTopicForm
+    div
+      input#newTitle(
+        type='text'
+        placeholder='トピックのタイトル'
+        maxlength='256'
+        required
+      )
+
+    div
+      textarea#newMessage(
+        placeholder='最初のメッセージ'
+        maxlength='512'
+        required
+      )
+
+    button(type='submit') トピックを作成
+
+  p#createTopicResult
+
+  h3 メールアドレス・パスワード変更
+
+  form#passwordForm
+    input#newPassword(
+      type='password'
+      placeholder='新しいパスワード'
+      minlength='8'
+      maxlength='1024'
+      autocomplete='new-password'
+      required
+    )
+
+    input#newEmail(
+      type='email'
+      placeholder='新しいメールアドレス'
+      required
+    )
+
+    button(type='submit') 変更する
+
+  p#passwordResult
+
+  script.
+    // 現在のページ番号
+    let currentPage = 1;
+    let hasNext = false;
+    let loading = false;
+
+    // トピック一覧を取得する
+    async function loadTopics(page = currentPage) {
+      if (loading) return;
+
+      loading = true;
+
+      const list = document.getElementById('topicList');
+      const prevButton = document.getElementById('prevPage');
+      const nextButton = document.getElementById('nextPage');
+      const result = document.getElementById('pageResult');
+
+      prevButton.disabled = true;
+      nextButton.disabled = true;
+      result.textContent = '';
+
+      try {
+        const response = await fetch('/api/topic?page=' + page);
+
+        if (response.status === 401) {
+          window.location.href = '/';
+          return;
+        }
+
+        if (!response.ok) {
+          result.textContent = 'トピックを取得できませんでした';
+          return;
+        }
+
+        const data = await response.json();
+
+        // 次のページにトピックがなければ移動しない
+        if (data.topics.length === 0 && page > currentPage) {
+          hasNext = false;
+          result.textContent = 'これ以上トピックはありません';
+          return;
+        }
+
+        currentPage = page;
+        hasNext = data.topics.length === 5;
+
+        list.replaceChildren();
+
+        // 現在のページ番号を表示する
+        document.getElementById('pageNumber').textContent =
+          currentPage + 'ページ目';
+
+        if (data.topics.length === 0) {
+          const li = document.createElement('li');
+          li.textContent = 'トピックはまだありません';
+          list.appendChild(li);
+          return;
+        }
+
+        // トピックを一覧に表示する
+        data.topics.forEach(topic => {
+          const li = document.createElement('li');
+
+          const link = document.createElement('a');
+          link.href = '/topics/' + encodeURIComponent(topic.id);
+          link.textContent = topic.title;
+
+          li.appendChild(link);
+
+          li.appendChild(
+            document.createTextNode(
+              '（作成者：' + topic.author + '）'
+            )
+          );
+
+          list.appendChild(li);
+        });
+
+      } catch (error) {
+        result.textContent = '通信エラーが発生しました';
+        console.error(error);
+
+      } finally {
+        loading = false;
+        prevButton.disabled = currentPage === 1;
+        nextButton.disabled = !hasNext;
+      }
+    }
+
+    // 前のページへ移動
+    document.getElementById('prevPage').addEventListener('click', async () => {
+      if (currentPage > 1) {
+        await loadTopics(currentPage - 1);
+      }
+    });
+
+    // 次のページへ移動
+    document.getElementById('nextPage').addEventListener('click', async () => {
+      if (hasNext) {
+        await loadTopics(currentPage + 1);
+      }
+    });
+
+    // メールアドレス・パスワード変更処理
+    document.getElementById('passwordForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const emailInput = document.getElementById('newEmail');
+      const input = document.getElementById('newPassword');
+      const result = document.getElementById('passwordResult');
+
+      try {
+        const response = await fetch('/api/user/change', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            email: emailInput.value.trim(),
+            password: input.value
+          })
+        });
+
+        if (response.status === 401) {
+          window.location.href = '/';
+          return;
+        }
+
+        const data = await response.json();
+
+        if (response.ok) {
+          result.textContent = 'メールアドレス・パスワードを変更しました';
+          input.value = '';
+          emailInput.value = '';
+        } else {
+          result.textContent =
+            data.errors?.[0]?.reason || '変更に失敗しました';
+        }
+
+      } catch (error) {
+        result.textContent = '通信エラーが発生しました';
+        console.error(error);
+      }
+    });
+
+    // トピック新規作成処理
+    document.getElementById('createTopicForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const title = document.getElementById('newTitle').value.trim();
+      const message = document.getElementById('newMessage').value.trim();
+      const result = document.getElementById('createTopicResult');
+
+      try {
+        const response = await fetch('/api/topic/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ title, message })
+        });
+
+        if (response.status === 401) {
+          window.location.href = '/';
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          result.textContent =
+            data.errors?.[0]?.reason || '作成に失敗しました';
+          return;
+        }
+
+        window.location.href =
+          '/topics/' + encodeURIComponent(data.id);
+
+      } catch (error) {
+        result.textContent = '通信エラーが発生しました';
+        console.error(error);
+      }
+    });
+
+    // ログアウト処理
+    document.getElementById('logoutButton').addEventListener('click', async () => {
+      const result = document.getElementById('logoutResult');
+
+      try {
+        const response = await fetch('/api/user/logout', {
+          method: 'POST'
+        });
+
+        if (response.ok || response.status === 401) {
+          window.location.href = '/';
+        } else {
+          result.textContent = 'ログアウトに失敗しました';
+        }
+
+      } catch (error) {
+        result.textContent = '通信エラーが発生しました';
+        console.error(error);
+      }
+    });
+
+    // 最初にトピック一覧を読み込む
+    loadTopics();

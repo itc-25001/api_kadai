@@ -4,6 +4,8 @@ import type { ErrorRequestHandler } from 'express'
 import userRouter from './src/routes/user'
 import topicRouter from './src/routes/topic'
 import postRouter from './src/routes/post'
+import { prisma } from './src/lib/db'
+import { isUuid } from './src/lib/http'
 
 const sessionSecret = process.env.SESSION_SECRET
 if (!sessionSecret || sessionSecret.length < 32) {
@@ -11,6 +13,9 @@ if (!sessionSecret || sessionSecret.length < 32) {
 }
 
 const app = express()
+app.use(express.static('public'))
+app.set('view engine', 'pug')
+app.set('views', './views')
 app.disable('x-powered-by')
 app.use(express.json({ limit: '20kb' }))
 
@@ -26,6 +31,45 @@ app.use(session({
     maxAge: 60 * 60 * 1000,
   },
 }))
+
+app.get('/', (_req, res) => {
+  res.render('index', {
+    title: 'フォーラムシステム'
+  })
+})
+app.get('/topics', (_req, res) => {
+  res.render('topics', {
+    title: 'トピック一覧'
+  })
+})
+
+app.get('/topics/:topic_id', async (req, res) => {
+  const userId = req.session.userId
+  const topicId = req.params.topic_id
+
+  if (!userId) {
+    res.redirect('/')
+    return
+  }
+
+  if (!isUuid(topicId)) {
+    res.status(404).send('トピックが見つかりません')
+    return
+  }
+
+  const topic = await prisma.topic.findFirst({
+    where: {
+      id: topicId,
+      deletedAt: null
+    }
+  })
+
+  res.render('topic', {
+    title: 'トピック詳細',
+    canEditTopic: topic?.authorId === userId
+  })
+})
+
 
 app.use('/api/user', userRouter)
 app.use('/api/topic', topicRouter)

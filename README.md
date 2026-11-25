@@ -182,4 +182,4 @@ api_kadai/
 - データベースの内容を消してしまう `docker compose down -v` は実行しないでください。
 - 元の仕様の `/user/register` の400レスポンススキーマが `SimpleMessage` 参照なのにエラー例は `errors` 形式になっています。本実装ではサンプルに合わせて `errors` 形式に統一しました。
 - `forum.yaml` のOpenAPIバージョンは配布物を変更せずそのまま保存しています。
-- **このZIPは実装例です**。提出前にご自身の環境で `bun install` → DB起動 → `bun run db:deploy` → API起動 → テストを実行して動作確認してください。
+- 提出前にご自身の環境で `bun install` → DB起動 → `bun run db:deploy` → API起動 → テストを実行して動作確認してください。
