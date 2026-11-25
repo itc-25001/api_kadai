@@ -23,7 +23,7 @@ block main
   p#deleteTopicResult
 
   h3 投稿一覧
-  ul#postList
+  ul#postList(data-user-id=currentUserId)
     li メッセージを取得しています...
   div
     button#prevPage(type='button' disabled) 前のページ
@@ -191,8 +191,11 @@ block main
 
         li.appendChild(name);
         li.appendChild(message);
-        li.appendChild(editButton);
-        li.appendChild(deleteButton);
+        // 投稿者本人の場合だけボタンを表示する
+        if (post.contributor.id === list.dataset.userId) {
+          li.appendChild(editButton);
+          li.appendChild(deleteButton);
+        }
 
         list.appendChild(li);
       });

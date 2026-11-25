@@ -66,7 +66,8 @@ app.get('/topics/:topic_id', async (req, res) => {
 
   res.render('topic', {
     title: 'トピック詳細',
-    canEditTopic: topic?.authorId === userId
+    canEditTopic: topic?.authorId === userId,
+    currentUserId: userId
   })
 })
 
