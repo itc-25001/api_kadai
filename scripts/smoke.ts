@@ -1,6 +1,5 @@
 /**
  * API動作確認スクリプト。実行するとテスト用ユーザーと投稿がDBに作成されます。
- * 先に bun run dev でサーバーを起動してください。
  */
 const base = process.env.API_URL || 'http://localhost:3000/api'
 let cookie = ''
