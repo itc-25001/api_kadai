@@ -1,4 +1,6 @@
 ## ポートフォリオ用に内容を掲載
+#message_boardとの比較
+
 # フォーラムシステム（Forum System）
 
 ## 概要
