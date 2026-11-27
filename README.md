@@ -65,3 +65,28 @@ PostgreSQL（Docker）
 
 JavaScriptのfetchを使用してREST APIを呼び出し、
 Prismaを通じてデータベースを操作しています。
+
+## 起動方法
+
+Bun、Dockerがインストールされていることを前提とします。
+
+### 初回起動
+
+```bash
+git clone https://github.com/itc-25001/api_kadai.git
+cd api_kadai
+bun install
+cp .env.example .env
+docker compose -f docker/compose.yaml up -d --wait
+bun run db:deploy
+bun run prisma:generate
+bun run dev
+```
+
+ブラウザで http://localhost:3000/ にアクセスします。
+
+### 2回目以降
+
+```bash
+docker compose -f docker/compose.yaml up -d
+bun run dev
