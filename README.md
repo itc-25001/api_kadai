@@ -1,5 +1,5 @@
 ## ポートフォリオ用に内容を掲載
-###message_boardとの比較
+## message_boardとの比較
 
 # フォーラムシステム（Forum System）
 
