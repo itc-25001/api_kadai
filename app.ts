@@ -6,6 +6,8 @@ import topicRouter from './src/routes/topic'
 import postRouter from './src/routes/post'
 import { prisma } from './src/lib/db'
 import { isUuid } from './src/lib/http'
+import { createClient } from 'redis'
+import { RedisStore } from 'connect-redis'
 
 const sessionSecret = process.env.SESSION_SECRET
 if (!sessionSecret || sessionSecret.length < 32) {
@@ -13,6 +15,20 @@ if (!sessionSecret || sessionSecret.length < 32) {
 }
 
 const app = express()
+const valkeyClient = createClient({
+  url: process.env.VALKEY_URL
+})
+
+valkeyClient.on('error', error => {
+  console.error('Valkey接続エラー:', error)
+})
+
+await valkeyClient.connect()
+
+const valkeyStore = new RedisStore({
+  client: valkeyClient,
+  prefix: 'forum:'
+})
 app.use(express.static('public'))
 app.set('view engine', 'pug')
 app.set('views', './views')
@@ -20,6 +36,7 @@ app.disable('x-powered-by')
 app.use(express.json({ limit: '20kb' }))
 
 app.use(session({
+  store: valkeyStore,
   name: 'forum.sid',
   secret: sessionSecret,
   resave: false,
