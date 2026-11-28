@@ -1,0 +1,93 @@
+## ポートフォリオ用に内容を掲載
+## 変更箇所
+localhost:3000→2000に変更　他の授業で作ってるサイトも3000で、googleパスワードマネージャーで素早くログインするために同じホスト番号だとメアドとパスワードが重なってしまうため。
+ポートフォリオ用にすることを考えたので、画面設計までやった。
+# フォーラムシステム（Forum System）
+
+## 概要
+
+スレッドフロート型の掲示板Webアプリケーションです。
+
+ユーザーがアカウントを作成し、話題ごとにトピックを
+作成して、メッセージの投稿や返信を行うことができます。
+
+## 開発目的
+
+- TypeScriptを使用したWebアプリケーション開発
+- Expressを使用したREST APIの実装
+- PrismaとPostgreSQLによるデータベース操作
+- セッションを利用したユーザー認証
+- フロントエンドとバックエンドの連携
+
+## 使用技術
+
+| 開発言語 | TypeScript、JavaScript |
+| 実行環境 | Bun |
+| データベース | PostgreSQL |
+| その他 | Pug,CSS,Prisma |
+| 開発環境 | WebStorm |
+
+### ユーザー管理
+
+- 新規ユーザー登録
+- ログイン・ログアウト
+- メールアドレス変更
+- パスワード変更
+### トピック管理
+
+- トピック一覧表示
+- トピック詳細表示
+- トピックの新規作成
+- トピック名の変更
+- トピックの削除
+
+### メッセージ管理
+
+- メッセージの投稿
+- メッセージの編集
+- メッセージの削除
+
+### その他の機能
+
+- スレッドフロート
+- ページネーション（1ページ5件）
+- 編集・削除時の権限チェック
+- 投稿者本人に対する編集・削除ボタンの表示
+
+## システム構成
+
+ブラウザ（Pug・JavaScript・CSS）
+        ↓
+REST API（TypeScript・Express）
+        ↓
+Prisma
+        ↓
+PostgreSQL（Docker）
+
+JavaScriptのfetchを使用してREST APIを呼び出し、
+Prismaを通じてデータベースを操作しています。
+
+## 起動方法
+
+Bun、Dockerがインストールされていることを前提とします。
+
+### 初回起動
+
+```bash
+git clone https://github.com/itc-25001/api_kadai.git
+cd api_kadai
+bun install
+cp .env.example .env
+docker compose -f docker/compose.yaml up -d --wait
+bun run db:deploy
+bun run prisma:generate
+bun run dev
+```
+
+ブラウザで http://localhost:3000/ にアクセスします。
+
+### 2回目以降
+
+```bash
+docker compose -f docker/compose.yaml up -d
+bun run dev
