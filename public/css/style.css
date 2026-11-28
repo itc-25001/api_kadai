@@ -1,0 +1,88 @@
+/* ページ全体 */
+body {
+    margin: 0;
+    background-color: #f0f2f5;
+    font-family: sans-serif;
+    color: #333;
+}
+
+/* ヘッダー */
+header {
+    background-color: #1e293b;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+}
+
+/* メイン画面 */
+main {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #00000015;
+}
+
+/* 入力欄 */
+input, textarea {
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+/* ボタン */
+button {
+    padding: 8px 16px;
+    margin: 5px;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #1d4ed8;
+}
+
+button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+}
+
+/* 一覧 */
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* リンク */
+a {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* 見出し */
+h3 {
+    margin-top: 30px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 8px;
+}

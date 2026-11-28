@@ -1,0 +1,114 @@
+extends layout
+
+block main
+  h2 ログイン
+
+  form#loginForm
+    div
+      label(for='email') メールアドレス
+      input#email(type='email' required)
+
+    div
+      label(for='password') パスワード
+      input#password(type='password' required)
+
+    button(type='submit') ログイン
+
+  p#result
+
+
+  h2 新規ユーザー登録
+
+  form#registerForm
+    div
+      input#registerName(
+        type='text'
+        placeholder='ユーザー名'
+        maxlength='128'
+      )
+
+    div
+      input#registerEmail(
+        type='email'
+        placeholder='メールアドレス'
+        required
+      )
+
+    div
+      input#registerPassword(
+        type='password'
+        placeholder='パスワード（8文字以上）'
+        minlength='8'
+        required
+      )
+
+    button(type='submit') 登録する
+
+  p#registerResult
+
+
+  //：ログインAPIとの連携
+  script.
+    const form = document.getElementById('loginForm');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('/api/user/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          window.location.href = '/topics';
+        } else {
+          result.textContent =
+            data.errors?.[0]?.reason || 'ログインに失敗しました';
+        }
+      } catch (error) {
+        result.textContent = 'サーバーに接続できません';
+      }
+    });
+
+    // 新規ユーザー登録処理
+    document.getElementById('registerForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const name = document.getElementById('registerName').value.trim();
+      const email = document.getElementById('registerEmail').value.trim();
+      const password = document.getElementById('registerPassword').value;
+      const result = document.getElementById('registerResult');
+
+      try {
+        const response = await fetch('/api/user/register', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name, email, password})
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          result.textContent = '登録しました。ログインしてください。';
+          document.getElementById('registerForm').reset();
+        } else {
+          result.textContent =
+            data.errors?.[0]?.reason || '登録に失敗しました';
+        }
+
+      } catch (error) {
+        result.textContent = '通信エラーが発生しました';
+        console.error(error);
+      }
+    });
